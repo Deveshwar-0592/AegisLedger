@@ -1,0 +1,55 @@
+#!/bin/sh
+# AegisLedger Pre-Commit Hook
+# Fix 44: Block commits that contain DEPLOYER_PRIVATE_KEY in any .env file.
+# Install: cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -e
+
+echo "[pre-commit] Running AegisLedger security checks..."
+
+# ─── Check 1: DEPLOYER_PRIVATE_KEY must never appear in .env files ───────────
+if grep -rn "DEPLOYER_PRIVATE_KEY\s*=" .env* 2>/dev/null; then
+  echo ""
+  echo "❌  ERROR: DEPLOYER_PRIVATE_KEY found in .env file(s)."
+  echo "    This key must NEVER be stored in .env."
+  echo "    It must only be injected by the CI/CD pipeline at deploy time."
+  echo "    See smart-contracts/AUDIT.md for the correct deployment process."
+  echo ""
+  exit 1
+fi
+
+# ─── Check 2: AUDIT_CONFIRMED must not be hardcoded as true in source ────────
+if grep -rn "AUDIT_CONFIRMED=true" .env* 2>/dev/null; then
+  echo ""
+  echo "❌  ERROR: AUDIT_CONFIRMED=true found in .env file(s)."
+  echo "    This value must only be injected via CI/CD secrets vault,"
+  echo "    never stored locally. See smart-contracts/AUDIT.md."
+  echo ""
+  exit 1
+fi
+
+# ─── Check 3: No hardcoded private keys (0x + 64 hex chars) in .env files ────
+if grep -rEn "0x[0-9a-fA-F]{64}" .env* 2>/dev/null; then
+  echo ""
+  echo "⚠️   WARNING: Found what appears to be a raw private key in .env file(s)."
+  echo "    Verify these are not signing keys before proceeding."
+  echo "    To bypass this check (not recommended): git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+# ─── Check 4: Plaintext secrets pattern in staged Solidity files ──────────────
+STAGED_SOL=$(git diff --cached --name-only --diff-filter=ACM | grep "\.sol$" || true)
+if [ -n "$STAGED_SOL" ]; then
+  if echo "$STAGED_SOL" | xargs grep -ln "Audited by: \[Audit Firm\]" 2>/dev/null; then
+    echo ""
+    echo "❌  ERROR: Placeholder audit comment found in staged .sol file(s)."
+    echo "    Replace '[Audit Firm]' with the actual audit status comment."
+    echo "    See smart-contracts/AUDIT.md."
+    echo ""
+    exit 1
+  fi
+fi
+
+echo "[pre-commit] ✅  All security checks passed."
+exit 0

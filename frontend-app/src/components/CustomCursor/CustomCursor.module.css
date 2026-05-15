@@ -1,0 +1,49 @@
+.cursorDot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent-gold);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  /* Dot moves instantly, no transition on transform */
+}
+
+.cursorRing {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: width 0.15s ease, height 0.15s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.hovered .cursorRing {
+  width: 48px;
+  height: 48px;
+  background-color: rgba(201, 168, 76, 0.1);
+  border-color: rgba(201, 168, 76, 0.6);
+}
+
+.clicked .cursorRing {
+  animation: ripple 0.3s ease-out;
+}
+
+.input .cursorRing {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}

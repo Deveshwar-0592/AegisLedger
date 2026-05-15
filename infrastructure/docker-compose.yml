@@ -1,0 +1,338 @@
+version: "3.9"
+
+# AegisLedger — Full Docker Compose (dev/staging)
+# 18 microservices + infrastructure
+
+x-common: &common
+  restart: unless-stopped
+  networks: [backend-net]
+  env_file: [.env]
+
+x-svc: &svc
+  <<: *common
+  depends_on: [postgres, redis, kafka-1, kafka-2, kafka-3]
+
+services:
+
+  # ── INFRASTRUCTURE ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    <<: *common
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: aegis_dev_password
+      POSTGRES_DB: aegisledger
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U aegis -d aegisledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    <<: *common
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-aegis_redis_pass}
+    volumes: [redisdata:/data]
+    expose: ["6379"]
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 10s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    <<: *common
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    volumes: [zkdata:/var/lib/zookeeper/data]
+
+  kafka-1:
+    image: confluentinc/cp-kafka:7.5.0
+    restart: unless-stopped
+    networks: [backend-net]
+    env_file: [.env]
+    depends_on: [zookeeper]
+    expose: ["9092", "29092"]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    volumes: [kafkadata-1:/var/lib/kafka/data]
+    healthcheck:
+      test: ["CMD","kafka-broker-api-versions","--bootstrap-server","localhost:9092"]
+      interval: 20s
+
+  kafka-2:
+    image: confluentinc/cp-kafka:7.5.0
+    restart: unless-stopped
+    networks: [backend-net]
+    env_file: [.env]
+    depends_on: [zookeeper]
+    expose: ["9093", "29093"]
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:29093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    volumes: [kafkadata-2:/var/lib/kafka/data]
+
+  kafka-3:
+    image: confluentinc/cp-kafka:7.5.0
+    restart: unless-stopped
+    networks: [backend-net]
+    env_file: [.env]
+    depends_on: [zookeeper]
+    expose: ["9094", "29094"]
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:29094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    volumes: [kafkadata-3:/var/lib/kafka/data]
+
+  mailhog:
+    image: mailhog/mailhog
+    <<: *common
+    expose: ["1025","8025"]  # SMTP:1025, Web UI:8025
+
+  # ── MICROSERVICES ────────────────────────────────────────────
+  identity-service:
+    <<: *svc
+    build: ./services/identity-service
+    expose: ["3001"]
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=identity_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  wallet-service:
+    <<: *svc
+    build: ./services/wallet-service
+    expose: ["3002"]
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=wallet_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      MOCK_FIREBLOCKS: "true"
+      PRODUCTION_MODE: "${PRODUCTION_MODE:-false}" # Fix 12: Set to "true" only after VARA + ISO27001 + audit
+
+  compliance-service:
+    <<: *svc
+    build: ./services/compliance-service
+    expose: ["3003"]
+    environment:
+      PORT: 3003
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=compliance_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  trade-service:
+    <<: *svc
+    build: ./services/trade-service
+    expose: ["3004"]
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=trade_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  fiat-service:
+    <<: *svc
+    build: ./services/fiat-service
+    expose: ["3005"]
+    environment:
+      PORT: 3005
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=fiat_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      MOCK_OPENPAYD: "true"
+      PRODUCTION_MODE: "${PRODUCTION_MODE:-false}" # Fix 12
+      OPENPAYD_WEBHOOK_SECRET: "${OPENPAYD_WEBHOOK_SECRET}" # Fix 47
+
+  notification-service:
+    <<: *svc
+    build: ./services/notification-service
+    expose: ["3006"]
+    environment:
+      PORT: 3006
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=notification_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      MOCK_EMAIL: "true"
+      MAILHOG_HOST: mailhog
+
+  websocket-service:
+    <<: *svc
+    build: ./services/websocket-service
+    expose: ["3007","3099"]
+    environment:
+      PORT: 3007
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+
+  kyb-service:
+    <<: *svc
+    build: ./services/kyb-service
+    expose: ["3008"]
+    environment:
+      PORT: 3008
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=kyb_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      AES_KEY: "${AES_KEY}" # Fix 23/24: Must be 64 hex chars (32 bytes for AES-256)
+      KYB_DOCUMENTS_BUCKET: "${KYB_DOCUMENTS_BUCKET}" # Fix 42
+
+  compliance-engine:
+    <<: *svc
+    build: ./services/compliance-engine
+    expose: ["3009"]
+    environment:
+      PORT: 3009
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=compliance_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      VARA_VASP_ID: "${VARA_VASP_ID:-TEST-AegisLedger-STAGING}" # Fix 35: Override with real VARA ID in production
+
+  analytics-service:
+    <<: *svc
+    build: ./services/analytics-service
+    expose: ["3010"]
+    environment:
+      PORT: 3010
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=analytics_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+
+  auth-service:
+    <<: *svc
+    build: ./services/auth-service
+    expose: ["3011"]
+    environment:
+      PORT: 3011
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=identity_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  billing-service:
+    <<: *svc
+    build: ./services/billing-service
+    expose: ["3012"]
+    environment:
+      PORT: 3012
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=billing_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET}" # Fix 48
+
+  developer-portal:
+    <<: *svc
+    build: ./services/developer-portal
+    expose: ["3013"]
+    environment:
+      PORT: 3013
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=developer_portal_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+
+  trading-service:
+    <<: *svc
+    build: ./services/trading-service
+    expose: ["3014"]
+    environment:
+      PORT: 3014
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=trading_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      PRODUCTION_MODE: "${PRODUCTION_MODE:-false}" # Fix 12
+
+  scheduler-service:
+    <<: *svc
+    build: ./services/scheduler-service
+    expose: ["3015"]
+    environment:
+      PORT: 3015
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=scheduler_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  webhook-service:
+    <<: *svc
+    build: ./services/webhook-service
+    expose: ["3016"]
+    environment:
+      PORT: 3016
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=webhook_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  business-model:
+    <<: *svc
+    build: ./services/business-model
+    expose: ["3017"]
+    environment:
+      PORT: 3017
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=business_model_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+
+  ai-service:
+    <<: *svc
+    build: ./services/ai-service
+    expose: ["3018"]
+    environment:
+      PORT: 3018
+      DATABASE_URL: postgresql://aegis:aegis_dev_password@postgres:5432/aegisledger?search_path=ai_svc,public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aegis_redis_pass}@redis:6379
+      KAFKA_BROKERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+
+  # ── NGINX GATEWAY ────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    env_file: [.env]
+    networks:
+      - frontend-net
+      - backend-net
+    depends_on:
+      - identity-service
+      - wallet-service
+      - compliance-service
+    ports: ["80:80","443:443"]
+    volumes:
+      - ./infrastructure/nginx/gateway.conf:/etc/nginx/nginx.conf:ro
+      - nginxlogs:/var/log/nginx
+
+volumes:
+  pgdata:
+  redisdata:
+  kafkadata-1:
+  kafkadata-2:
+  kafkadata-3:
+  zkdata:
+  nginxlogs:
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge

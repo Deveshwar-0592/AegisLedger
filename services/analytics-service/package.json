@@ -1,0 +1,21 @@
+{
+  "name": "aegisledger-analytics-service",
+  "version": "1.0.0",
+  "description": "AegisLedger \u2014 Transaction analytics, P&L, corridor heatmap, settlement benchmarks",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "pg": "^8.11.3",
+    "redis": "^4.6.11",
+    "kafkajs": "^2.2.4",
+    "date-fns": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

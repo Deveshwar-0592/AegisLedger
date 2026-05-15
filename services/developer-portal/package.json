@@ -1,0 +1,23 @@
+{
+  "name": "aegisledger-developer-portal",
+  "version": "1.0.0",
+  "description": "AegisLedger \u2014 OpenAPI docs, sandbox, API key management, usage analytics, webhooks",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "swagger-ui-express": "^5.0.0",
+    "pg": "^8.11.3",
+    "redis": "^4.6.11",
+    "kafkajs": "^2.2.4",
+    "uuid": "^9.0.1",
+    "rate-limiter-flexible": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

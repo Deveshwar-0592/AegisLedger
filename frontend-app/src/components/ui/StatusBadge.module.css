@@ -1,0 +1,157 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Base styles for status types */
+.pending, .created, .funded {
+  background-color: rgba(201, 168, 76, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold-dim);
+  animation: pulse-amber 2s infinite;
+}
+
+.completed, .released, .conditions_met {
+  background-color: rgba(26, 122, 74, 0.15);
+  color: #4ade80;
+  border: 1px solid var(--status-green);
+}
+
+/* Holographic Foil Effect */
+.holographic::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.4) 40%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.4) 60%,
+    transparent 80%
+  );
+  transform: rotate(25deg);
+  animation: holoSweep 3s infinite;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+@keyframes holoSweep {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  30% { transform: translateX(100%) rotate(25deg); }
+  100% { transform: translateX(100%) rotate(25deg); }
+}
+
+.failed, .frozen {
+  background-color: rgba(139, 32, 32, 0.15);
+  color: #f87171;
+  border: 1px solid var(--status-red);
+}
+
+/* Glitch Effect */
+.glitch {
+  animation: glitch-skew 3s infinite linear alternate-reverse;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0.25rem 0.75rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glitch::before {
+  left: 1px;
+  text-shadow: -1px 0 red;
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  animation: glitch-anim 2s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+  left: -1px;
+  text-shadow: -1px 0 blue;
+  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+  0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); transform: translate(0); }
+  20% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(-2px, 1px); }
+  40% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); transform: translate(2px, -1px); }
+  60% { clip-path: polygon(0 1%, 100% 1%, 100% 2%, 0 2%); transform: translate(0); }
+  80% { clip-path: polygon(0 33%, 100% 33%, 100% 33%, 0 33%); transform: translate(0); }
+  100% { clip-path: polygon(0 44%, 100% 44%, 100% 44%, 0 44%); transform: translate(0); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip-path: polygon(0 25%, 100% 25%, 100% 30%, 0 30%); transform: translate(0); }
+  20% { clip-path: polygon(0 3%, 100% 3%, 100% 3%, 0 3%); transform: translate(2px, -1px); }
+  40% { clip-path: polygon(0 5%, 100% 5%, 100% 20%, 0 20%); transform: translate(-2px, 1px); }
+  60% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(0); }
+  80% { clip-path: polygon(0 10%, 100% 10%, 100% 10%, 0 10%); transform: translate(0); }
+  100% { clip-path: polygon(0 30%, 100% 30%, 100% 30%, 0 30%); transform: translate(0); }
+}
+
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  10% { transform: skew(-5deg); }
+  20% { transform: skew(0deg); }
+  100% { transform: skew(0deg); }
+}
+
+.disputed, .refunded {
+  background-color: rgba(122, 92, 26, 0.15);
+  color: #fbbf24;
+  border: 1px solid var(--status-amber);
+}
+
+.disputed {
+  animation: pulse-disputed 2s infinite;
+}
+
+@keyframes pulse-amber {
+  0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(201, 168, 76, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+}
+
+@keyframes pulse-disputed {
+  0% { box-shadow: 0 0 0 0 rgba(122, 92, 26, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(122, 92, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(122, 92, 26, 0); }
+}
+
+/* Reduced Motion Fallbacks */
+@media (prefers-reduced-motion: reduce) {
+  .holographic::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .glitch, .glitch::before, .glitch::after {
+    animation: none !important;
+  }
+  .glitch::before, .glitch::after {
+    display: none !important;
+  }
+  .pending, .created, .funded, .disputed {
+    animation: none !important;
+  }
+}

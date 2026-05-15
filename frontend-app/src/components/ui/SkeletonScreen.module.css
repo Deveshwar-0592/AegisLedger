@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.skeletonBase {
+  position: relative;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.skeletonCard {
+  height: 200px;
+  background-image: 
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.skeletonRow {
+  display: flex;
+  height: 48px;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+}
+
+.skeletonCell {
+  height: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.skeletonText {
+  height: 16px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  width: 100%;
+}
+
+.scanner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.15), rgba(201, 168, 76, 0.4), transparent);
+  animation: scan 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  0% { transform: translateX(-150px); }
+  100% { transform: translateX(1500px); }
+}
+
+@media (max-width: 768px) {
+  @keyframes scan {
+    0% { transform: translateX(-150px); }
+    100% { transform: translateX(800px); }
+  }
+}

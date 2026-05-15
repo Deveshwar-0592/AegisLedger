@@ -1,0 +1,43 @@
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mark {
+  stroke: var(--accent-gold);
+  stroke-width: 2;
+  fill: transparent;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawMark 1.2s ease-in-out forwards;
+}
+
+.markFillStatic {
+  fill: var(--accent-gold);
+}
+
+.markFill {
+  fill: var(--accent-gold);
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in-out 1.2s forwards;
+}
+
+.text {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+@keyframes drawMark {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}

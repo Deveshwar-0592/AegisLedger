@@ -1,0 +1,23 @@
+.magneticContainer {
+  display: inline-block;
+  position: relative;
+}
+
+.magneticButton {
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+  will-change: transform;
+}
+
+/* Override the default button active scale for magnetic buttons to prevent jank */
+.magneticButton:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s ease !important;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+}

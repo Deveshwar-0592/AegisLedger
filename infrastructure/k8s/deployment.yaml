@@ -1,0 +1,372 @@
+# AegisLedger — Kubernetes Deployment Manifests
+# Target: AWS EKS (me-central-1, UAE — VARA data sovereignty compliance)
+# Architecture: Microservices, Auto-scaling, 99.99% SLA
+
+---
+# ─── NAMESPACE ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aegisledger-prod
+  labels:
+    app.kubernetes.io/managed-by: aegisledger
+    environment: production
+
+---
+# ─── IDENTITY SERVICE ───────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-service
+  namespace: aegisledger-prod
+  labels:
+    app: identity-service
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: identity-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: identity-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: identity-service
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: identity-service
+          image: ECR_REGISTRY/aegisledger/identity-service:latest
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: aegisledger-secrets
+            - configMapRef:
+                name: aegisledger-config
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-service
+  namespace: aegisledger-prod
+spec:
+  selector:
+    app: identity-service
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
+
+---
+# ─── WALLET SERVICE ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wallet-service
+  namespace: aegisledger-prod
+  labels:
+    app: wallet-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: wallet-service
+  template:
+    metadata:
+      labels:
+        app: wallet-service
+    spec:
+      containers:
+        - name: wallet-service
+          image: ECR_REGISTRY/aegisledger/wallet-service:latest
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - secretRef:
+                name: aegisledger-secrets
+            - configMapRef:
+                name: aegisledger-config
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wallet-service
+  namespace: aegisledger-prod
+spec:
+  selector:
+    app: wallet-service
+  ports:
+    - port: 3002
+      targetPort: 3002
+
+---
+# ─── COMPLIANCE SERVICE ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compliance-service
+  namespace: aegisledger-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: compliance-service
+  template:
+    metadata:
+      labels:
+        app: compliance-service
+    spec:
+      containers:
+        - name: compliance-service
+          image: ECR_REGISTRY/aegisledger/compliance-service:latest
+          ports:
+            - containerPort: 3003
+          envFrom:
+            - secretRef:
+                name: aegisledger-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: compliance-service
+  namespace: aegisledger-prod
+spec:
+  selector:
+    app: compliance-service
+  ports:
+    - port: 3003
+      targetPort: 3003
+
+---
+# ─── TRADE SERVICE ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trade-service
+  namespace: aegisledger-prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: trade-service
+  template:
+    metadata:
+      labels:
+        app: trade-service
+    spec:
+      containers:
+        - name: trade-service
+          image: ECR_REGISTRY/aegisledger/trade-service:latest
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - secretRef:
+                name: aegisledger-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+---
+# ─── HORIZONTAL POD AUTOSCALERS ─────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wallet-service-hpa
+  namespace: aegisledger-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wallet-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+---
+# ─── INGRESS (AWS ALB) ──────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aegisledger-ingress
+  namespace: aegisledger-prod
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/certificate-arn: ${ACM_CERTIFICATE_ARN}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: ${WAF_ACL_ARN}
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type":"redirect","RedirectConfig":{"Protocol":"HTTPS","Port":"443","StatusCode":"HTTP_301"}}'
+spec:
+  rules:
+    - host: app.aegisledger.io
+      http:
+        paths:
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: identity-service
+                port:
+                  number: 3001
+          - path: /api/wallets
+            pathType: Prefix
+            backend:
+              service:
+                name: wallet-service
+                port:
+                  number: 3002
+          - path: /api/compliance
+            pathType: Prefix
+            backend:
+              service:
+                name: compliance-service
+                port:
+                  number: 3003
+          - path: /api/trade
+            pathType: Prefix
+            backend:
+              service:
+                name: trade-service
+                port:
+                  number: 3004
+
+---
+# ─── SECRETS TEMPLATE ───────────────────────────────────────────────
+# Deploy via: kubectl create secret generic aegisledger-secrets --from-env-file=.env.production
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aegisledger-secrets
+  namespace: aegisledger-prod
+type: Opaque
+# stringData populated at deploy time via CI/CD pipeline (GitHub Actions + AWS Secrets Manager)
+
+---
+# ─── CONFIGMAP ──────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aegisledger-config
+  namespace: aegisledger-prod
+data:
+  NODE_ENV: "production"
+  MOCK_FIREBLOCKS: "false"
+  MOCK_AML: "false"
+  AWS_REGION: "me-central-1"
+  LOG_LEVEL: "info"
+
+---
+# ─── DISASTER RECOVERY (Fix 9) ──────────────────────────────────────
+# Multi-Region Disaster Recovery Setup (me-central-1 to eu-west-1)
+# RTO target: 4 hours | RPO target: 1 hour
+#
+# 1. RDS PostgreSQL Setup (Terraform/CDK snippet):
+#    resource "aws_db_instance" "aegis_primary" {
+#      engine               = "postgres"
+#      multi_az             = true  # Synchronous standby in me-central-1
+#      ...
+#    }
+#    resource "aws_db_instance" "aegis_replica" {
+#      replicate_source_db  = aws_db_instance.aegis_primary.arn
+#      availability_zone    = "eu-west-1a" # Warm standby in eu-west-1
+#      ...
+#    }
+#
+# 2. S3 Cross-Region Replication (Terraform snippet):
+#    resource "aws_s3_bucket_replication_configuration" "backup_replication" {
+#      role = aws_iam_role.replication.arn
+#      bucket = aws_s3_bucket.primary_backups.id
+#      rule {
+#        status = "Enabled"
+#        destination {
+#          bucket = aws_s3_bucket.eu_west_backups.arn
+#        }
+#      }
+#    }
+#
+# 3. Route 53 Failover Routing:
+#    resource "aws_route53_record" "app_aegisledger_io_primary" {
+#      name           = "app.aegisledger.io"
+#      set_identifier = "Primary-me-central-1"
+#      failover_routing_policy { type = "PRIMARY" }
+#      health_check_id = aws_route53_health_check.primary.id
+#    }
+#    resource "aws_route53_record" "app_aegisledger_io_secondary" {
+#      name           = "app.aegisledger.io"
+#      set_identifier = "Secondary-eu-west-1"
+#      failover_routing_policy { type = "SECONDARY" }
+#    }
