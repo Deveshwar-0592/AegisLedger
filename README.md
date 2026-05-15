@@ -100,12 +100,11 @@ The frontend has been completely overhauled to deliver a premium, high-fidelity 
 ### Local Development Setup
 
 1.  **Generate Secrets**:
-    Copy the `.env.example` file to `.env` in the root folder and populate all required fields. You must generate proper RSA keys for JWT signing:
+    Copy the `.env.example` file to `.env` in the root folder and populate all required fields. You must generate proper RSA keys for JWT signing. You can run the included script to generate them:
     ```bash
-    openssl genrsa -out private.pem 2048
-    openssl rsa -in private.pem -pubout -out public.pem
+    node generateKeys.js
     ```
-    Paste the contents into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` respectively.
+    This will generate `private.pem` and `public.pem`. Paste their contents into `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` respectively in your `.env` file.
 
 2.  **Start the Backend Infrastructure**:
     The backend consists of 18 microservices, PostgreSQL, Redis, 3 Kafka brokers, and an NGINX API Gateway. Start them all via Docker Compose:
