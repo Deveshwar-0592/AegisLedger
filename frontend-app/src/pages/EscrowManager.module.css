@@ -1,0 +1,356 @@
+.container {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--accent-gold);
+  margin-bottom: 0.25rem;
+}
+
+.pageSubtitle {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.leftPanel {
+  grid-column: span 4 / span 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rightPanel {
+  grid-column: span 8 / span 8;
+}
+
+.escrowItem {
+  width: 100%;
+  text-align: left;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  background: var(--bg-card, rgba(15, 15, 20, 0.8));
+  cursor: pointer;
+}
+
+.escrowItemInactive {
+  border-color: #1f2937;
+}
+
+.escrowItemInactive:hover {
+  border-color: #4b5563;
+}
+
+.escrowItemActive {
+  border-color: var(--accent-gold);
+  background: rgba(255, 215, 0, 0.05);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.itemTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.itemRef {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemAmount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.itemDesc {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Detail Panel */
+.detailCard {
+  background: var(--bg-card, rgba(15, 15, 20, 0.8));
+  border: 1px solid #1f2937;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.detailHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #1f2937;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerRefLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 0.25rem;
+}
+
+.headerRefValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.headerParties {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+
+.headerAmount {
+  font-size: 1.5rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-align: right;
+}
+
+.headerAsset {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: var(--font-mono, monospace);
+  text-align: right;
+}
+
+/* Lifecycle */
+.sectionBlock {
+  padding: 1.5rem;
+  border-bottom: 1px solid #1f2937;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 1.5rem;
+}
+
+.lifecycleSteps {
+  display: flex;
+  align-items: center;
+}
+
+.stepContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statusCircle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid;
+  transition: all 0.5s ease;
+}
+
+.statusCircleActive {
+  border-color: var(--accent-gold);
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--accent-gold);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.statusCirclePast {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.statusCircleFuture {
+  border-color: #374151;
+  color: #4b5563;
+}
+
+.stepLabel {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  margin-top: 0.5rem;
+}
+
+.stepLabelActive { color: var(--accent-gold); }
+.stepLabelPast { color: #9ca3af; }
+.stepLabelFuture { color: #4b5563; }
+
+.statusLine {
+  flex: 1;
+  height: 2px;
+  margin: 0 0.5rem;
+  transition: all 0.5s ease;
+}
+
+.statusLinePast { background: #a855f7; }
+.statusLineFuture { background: #1f2937; }
+
+/* Conditions */
+.conditionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.conditionRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+}
+
+.conditionRowFulfilled {
+  border-color: rgba(20, 83, 45, 0.5);
+  background: rgba(20, 83, 45, 0.1);
+}
+
+.conditionRowPending {
+  border-color: #1f2937;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.conditionTextContainer {
+  flex: 1;
+}
+
+.conditionType {
+  font-size: 0.875rem;
+  font-family: var(--font-mono, monospace);
+}
+
+.conditionTypeFulfilled { color: #ffffff; }
+.conditionTypePending { color: #6b7280; }
+
+.conditionMeta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.125rem;
+}
+
+.conditionHash {
+  color: #4b5563;
+  font-family: var(--font-mono, monospace);
+}
+
+.iconSuccess { color: #4ade80; }
+.iconPending { color: #4b5563; }
+.iconAlert { color: #ca8a04; }
+
+/* Multi-Sig */
+.multiSigRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progressBarBg {
+  flex: 1;
+  background: #1f2937;
+  border-radius: 9999px;
+  height: 0.5rem;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--accent-gold);
+  transition: width 1s ease;
+}
+
+.multiSigLabel {
+  font-size: 0.875rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--accent-gold);
+}
+
+/* Actions */
+.actionRow {
+  padding: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.primaryBtn {
+  padding: 0.625rem 1.5rem;
+  background: var(--accent-gold);
+  color: #000;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.primaryBtn:hover {
+  background: #fff;
+}
+
+.dangerBtn {
+  padding: 0.625rem 1.5rem;
+  background: transparent;
+  color: #f87171;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dangerBtn:hover {
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.successText {
+  color: #4ade80;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animatePulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

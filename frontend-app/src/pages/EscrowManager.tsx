@@ -5,6 +5,7 @@ import {
   DollarSign, FileCheck, Truck, Gavel
 } from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import styles from './EscrowManager.module.css';
 
 // --- Types ---
 type EscrowStatus = 'CREATED' | 'FUNDED' | 'CONDITIONS_MET' | 'RELEASED' | 'DISPUTED' | 'REFUNDED' | 'FROZEN';
@@ -125,37 +126,33 @@ export const EscrowManager: React.FC = () => {
   const stepIndex = selected ? STATUS_STEP_INDEX[selected.status] : 0;
 
   return (
-    <div className="p-8 space-y-6">
+    <div className={styles.container}>
       <div>
-        <h1 className="text-2xl font-mono text-neon-blue mb-1">Escrow Manager</h1>
-        <p className="text-gray-400 text-sm">Real-time trade settlement lifecycle via AegisTradeEscrow.sol</p>
+        <h1 className={styles.pageTitle}>Escrow Manager</h1>
+        <p className={styles.pageSubtitle}>Real-time trade settlement lifecycle via AegisTradeEscrow.sol</p>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className={styles.grid}>
         {/* Left: Escrow List */}
-        <div className="col-span-4 space-y-3">
+        <div className={styles.leftPanel}>
           {MOCK_ESCROWS.map(e => (
             <button
               key={e.id}
               onClick={() => setSelected(e)}
-              className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
-                selected?.id === e.id
-                  ? 'border-neon-blue bg-neon-blue/5 shadow-[0_0_20px_rgba(0,240,255,0.1)]'
-                  : 'border-gray-800 bg-dark-card hover:border-gray-600'
-              }`}
+              className={`${styles.escrowItem} ${selected?.id === e.id ? styles.escrowItemActive : styles.escrowItemInactive}`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-mono text-xs text-gray-400 truncate">{e.tradeReference}</span>
+              <div className={styles.itemTop}>
+                <span className={styles.itemRef}>{e.tradeReference}</span>
                 <StatusBadge status={e.status} />
               </div>
-              <div className="text-lg font-bold text-white">{fmt(e.amount)}</div>
-              <div className="text-xs text-gray-500 mt-1">{e.assetKey} · {e.seller.slice(0, 22)}...</div>
+              <div className={styles.itemAmount}>{fmt(e.amount)}</div>
+              <div className={styles.itemDesc}>{e.assetKey} · {e.seller.slice(0, 22)}...</div>
             </button>
           ))}
         </div>
 
         {/* Right: Detail Panel */}
-        <div className="col-span-8">
+        <div className={styles.rightPanel}>
           <AnimatePresence mode="wait">
             {selected && (
               <motion.div
@@ -163,45 +160,52 @@ export const EscrowManager: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-dark-card border border-gray-800 rounded-xl overflow-hidden"
+                className={styles.detailCard}
               >
                 {/* Header */}
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center">
+                <div className={styles.detailHeader}>
                   <div>
-                    <p className="text-xs text-gray-500 font-mono mb-1">{selected.id}</p>
-                    <h2 className="text-xl font-bold text-white">{selected.tradeReference}</h2>
-                    <p className="text-sm text-gray-400 mt-1">{selected.buyer} → {selected.seller}</p>
+                    <p className={styles.headerRefLabel}>{selected.id}</p>
+                    <h2 className={styles.headerRefValue}>{selected.tradeReference}</h2>
+                    <p className={styles.headerParties}>{selected.buyer} → {selected.seller}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-mono font-bold text-neon-blue">{fmt(selected.amount)}</div>
-                    <div className="text-xs text-gray-500 font-mono">{selected.assetKey}</div>
+                  <div>
+                    <div className={styles.headerAmount}>{fmt(selected.amount)}</div>
+                    <div className={styles.headerAsset}>{selected.assetKey}</div>
                   </div>
                 </div>
 
                 {/* Lifecycle Progress */}
-                <div className="p-6 border-b border-gray-800">
-                  <h3 className="text-xs text-gray-500 font-mono mb-6">SETTLEMENT LIFECYCLE</h3>
-                  <div className="flex items-center">
+                <div className={styles.sectionBlock}>
+                  <h3 className={styles.sectionTitle}>SETTLEMENT LIFECYCLE</h3>
+                  <div className={styles.lifecycleSteps}>
                     {LIFECYCLE_STEPS.map((step, idx) => {
                       const Icon = step.icon;
                       const isActive = idx === stepIndex;
                       const isPast = idx < stepIndex;
+                      
+                      let circleClass = styles.statusCircleFuture;
+                      let labelClass = styles.stepLabelFuture;
+                      if (isActive) {
+                        circleClass = styles.statusCircleActive;
+                        labelClass = styles.stepLabelActive;
+                      } else if (isPast) {
+                        circleClass = styles.statusCirclePast;
+                        labelClass = styles.stepLabelPast;
+                      }
+
                       return (
                         <React.Fragment key={step.key}>
-                          <div className="flex flex-col items-center">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                              isActive ? 'border-neon-blue bg-neon-blue/10 text-neon-blue shadow-[0_0_12px_rgba(0,240,255,0.4)]'
-                              : isPast ? 'border-neon-purple bg-neon-purple/20 text-neon-purple'
-                              : 'border-gray-700 text-gray-600'
-                            }`}>
+                          <div className={styles.stepContainer}>
+                            <div className={`${styles.statusCircle} ${circleClass}`}>
                               <Icon size={16} />
                             </div>
-                            <span className={`text-xs font-mono mt-2 ${isActive ? 'text-neon-blue' : isPast ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <span className={`${styles.stepLabel} ${labelClass}`}>
                               {step.label}
                             </span>
                           </div>
                           {idx < LIFECYCLE_STEPS.length - 1 && (
-                            <div className={`flex-1 h-0.5 mx-2 transition-all duration-500 ${isPast ? 'bg-neon-purple' : 'bg-gray-800'}`} />
+                            <div className={`${styles.statusLine} ${isPast ? styles.statusLinePast : styles.statusLineFuture}`} />
                           )}
                         </React.Fragment>
                       );
@@ -210,27 +214,27 @@ export const EscrowManager: React.FC = () => {
                 </div>
 
                 {/* Conditions */}
-                <div className="p-6 border-b border-gray-800">
-                  <h3 className="text-xs text-gray-500 font-mono mb-4">TRADE CONDITIONS</h3>
-                  <div className="space-y-3">
+                <div className={styles.sectionBlock}>
+                  <h3 className={styles.sectionTitle}>TRADE CONDITIONS</h3>
+                  <div className={styles.conditionsList}>
                     {selected.conditions.map((cond, idx) => {
                       const Icon = CONDITION_ICONS[cond.type] || FileCheck;
                       return (
-                        <div key={idx} className={`flex items-center space-x-4 p-3 rounded-lg border ${cond.fulfilled ? 'border-green-900/50 bg-green-900/10' : 'border-gray-800 bg-black/30'}`}>
-                          <Icon size={16} className={cond.fulfilled ? 'text-green-400' : 'text-gray-600'} />
-                          <div className="flex-1">
-                            <div className={`text-sm font-mono ${cond.fulfilled ? 'text-white' : 'text-gray-500'}`}>
+                        <div key={idx} className={`${styles.conditionRow} ${cond.fulfilled ? styles.conditionRowFulfilled : styles.conditionRowPending}`}>
+                          <Icon size={16} className={cond.fulfilled ? styles.iconSuccess : styles.iconPending} />
+                          <div className={styles.conditionTextContainer}>
+                            <div className={`${styles.conditionType} ${cond.fulfilled ? styles.conditionTypeFulfilled : styles.conditionTypePending}`}>
                               {cond.type.replace(/_/g, ' ')}
                             </div>
                             {cond.fulfilled && cond.fulfilledAt && (
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                Verified {new Date(cond.fulfilledAt).toLocaleString()} · <span className="text-gray-600 font-mono">{cond.documentHash}</span>
+                              <div className={styles.conditionMeta}>
+                                Verified {new Date(cond.fulfilledAt).toLocaleString()} · <span className={styles.conditionHash}>{cond.documentHash}</span>
                               </div>
                             )}
                           </div>
                           {cond.fulfilled
-                            ? <CheckCircle2 size={16} className="text-green-400" />
-                            : <Clock size={16} className="text-yellow-600 animate-pulse" />
+                            ? <CheckCircle2 size={16} className={styles.iconSuccess} />
+                            : <Clock size={16} className={`${styles.iconAlert} ${styles.animatePulse}`} />
                           }
                         </div>
                       );
@@ -240,16 +244,16 @@ export const EscrowManager: React.FC = () => {
 
                 {/* Multi-Sig Status */}
                 {selected.isMultiSig && (
-                  <div className="p-6 border-b border-gray-800">
-                    <h3 className="text-xs text-gray-500 font-mono mb-3">MULTI-SIG RELEASE</h3>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1 bg-gray-800 rounded-full h-2">
+                  <div className={styles.sectionBlock}>
+                    <h3 className={styles.sectionTitle}>MULTI-SIG RELEASE</h3>
+                    <div className={styles.multiSigRow}>
+                      <div className={styles.progressBarBg}>
                         <div
-                          className="h-2 rounded-full bg-neon-blue transition-all duration-1000"
+                          className={styles.progressBarFill}
                           style={{ width: `${((selected.signaturesCollected ?? 0) / (selected.requiredSignatures ?? 1)) * 100}%` }}
                         />
                       </div>
-                      <span className="text-sm font-mono text-neon-blue">
+                      <span className={styles.multiSigLabel}>
                         {selected.signaturesCollected}/{selected.requiredSignatures} signers
                       </span>
                     </div>
@@ -258,21 +262,21 @@ export const EscrowManager: React.FC = () => {
 
                 {/* Action Buttons */}
                 {selected.status === 'CONDITIONS_MET' && (
-                  <div className="p-6 flex space-x-3">
-                    <button className="px-6 py-2.5 bg-neon-blue text-black font-bold font-mono text-sm rounded-lg hover:bg-white transition-colors shadow-[0_0_15px_rgba(0,240,255,0.3)] flex items-center space-x-2">
+                  <div className={styles.actionRow}>
+                    <button className={styles.primaryBtn}>
                       <ShieldCheck size={16} />
                       <span>SIGN RELEASE</span>
                     </button>
-                    <button className="px-6 py-2.5 border border-red-700 text-red-400 font-mono text-sm rounded-lg hover:bg-red-900/20 transition-colors flex items-center space-x-2">
+                    <button className={styles.dangerBtn}>
                       <AlertTriangle size={16} />
                       <span>INITIATE DISPUTE</span>
                     </button>
                   </div>
                 )}
                 {selected.status === 'RELEASED' && (
-                  <div className="p-6 flex items-center space-x-2 text-green-400">
-                    <CheckCircle2 size={18} />
-                    <span className="font-mono text-sm">Settlement complete. Funds transferred to seller vault.</span>
+                  <div className={styles.actionRow}>
+                    <CheckCircle2 size={18} className={styles.iconSuccess} />
+                    <span className={styles.successText}>Settlement complete. Funds transferred to seller vault.</span>
                   </div>
                 )}
               </motion.div>
